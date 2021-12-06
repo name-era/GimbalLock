@@ -187,8 +187,12 @@ class WebGLFrame {
         this.canvas.addEventListener('wheel', this.camera.wheelEvent, false);
 
         const VERTEX_COUNT = 100;
+        const INNER_VERTEX_COUNT = 100;
         const VERTEX_WIDTH = 2.5;
-        const VERTEX_RADIUS = 1;
+        const VERTEX_RADIUSX = 0.6;
+        const VERTEX_RADIUSY = 0.8;
+        const VERTEX_RADIUSZ = 1.0;
+        const INNER_RADIUS = 0.03;
 
         this.planePosition = [];
         this.circleX = [];
@@ -200,32 +204,43 @@ class WebGLFrame {
         this.index = [];
 
         for (let i = 0; i <= VERTEX_COUNT; ++i) {
-            const Rad = (i / VERTEX_COUNT) * Math.PI * 2.0;
 
-            const x = Math.sin(Rad);
-            const z = Math.cos(Rad);
 
-            this.circleX.push(
-                x * VERTEX_RADIUS,
-                0,
-                z * VERTEX_RADIUS,
-            );
+            const iRad = (i / VERTEX_COUNT) * Math.PI * 2.0;
+
+            const sint = Math.sin(iRad);
+            const cost = Math.cos(iRad);
+
+
+            for (let j = 0; j <= INNER_VERTEX_COUNT; j++) {
+                const jRad = (j / INNER_VERTEX_COUNT) * Math.PI * 2.0;
+                const sinp = Math.sin(jRad);
+                const cosp = Math.cos(jRad);
+
+                this.circleX.push(
+                    VERTEX_RADIUSX * cost + INNER_RADIUS * cosp * cost,
+                    INNER_RADIUS * sinp,
+                    VERTEX_RADIUSX * sint + INNER_RADIUS * cosp * sint,
+                );
+                this.colorX.push(0.0, 0.0, 1.0, 1.0);
+            }
+
 
             this.circleY.push(
-                z * VERTEX_RADIUS,
-                x * VERTEX_RADIUS,
+                cost * VERTEX_RADIUSY,
+                sint * VERTEX_RADIUSY,
                 0,
             );
 
             this.circleZ.push(
                 0,
-                z * VERTEX_RADIUS,
-                x * VERTEX_RADIUS,
+                cost * VERTEX_RADIUSZ,
+                sint * VERTEX_RADIUSZ,
             );
 
-            this.colorX.push(1.0, 0.0, 0.0, 1.0);
+
             this.colorY.push(0.0, 1.0, 0.0, 1.0);
-            this.colorZ.push(0.0, 0.0, 1.0, 1.0);
+            this.colorZ.push(1.0, 0.0, 0.0, 1.0);
         }
 
         this.vboX = [
