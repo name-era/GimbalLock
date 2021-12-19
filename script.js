@@ -19,19 +19,19 @@ window.addEventListener('DOMContentLoaded', () => {
         PANE.addInput({ alpha: alpha }, 'alpha', { step: 1, min: 0, max: 360 })
             .on('change', (v) => {
                 alpha = v;
-                webgl.camera.rotate();
+                webgl.camera.rotate('x');
             });
 
         PANE.addInput({ beta: beta }, 'beta', { step: 1, min: 0, max: 360 })
             .on('change', (v) => {
                 beta = v;
-                webgl.camera.rotate();
+                webgl.camera.rotate('y');
             });
 
         PANE.addInput({ gamma: gamma }, 'gamma', { step: 1, min: 0, max: 360 })
             .on('change', (v) => {
                 gamma = v;
-                webgl.camera.rotate();
+                webgl.camera.rotate('z');
             });
 
         webgl.render();
@@ -101,7 +101,7 @@ class WebGLFrame {
                     this.program = this.createProgram(vs, fs);
 
                     this.attLocation = [
-                        gl.getAttribLocation(this.program, 'circle'),
+                        gl.getAttribLocation(this.program, 'vert'),
                         gl.getAttribLocation(this.program, 'color'),
                     ];
                     this.attStride = [
@@ -186,27 +186,43 @@ class WebGLFrame {
         this.canvas.addEventListener('mouseup', this.camera.endEvent, false);
         this.canvas.addEventListener('wheel', this.camera.wheelEvent, false);
 
-        const VERTEX_COUNT = 100;
-        const INNER_VERTEX_COUNT = 100;
-        const VERTEX_WIDTH = 2.5;
-        const VERTEX_RADIUSX = 0.6;
-        const VERTEX_RADIUSY = 0.8;
+        const TORUS_VERTEX_COUNT = 50;
+        const INNER_VERTEX_COUNT = 20;
+        const LINE_VERTEX_COUNT = 2;
+        const VERTEX_RADIUSX = 0.8;
+        const VERTEX_RADIUSY = 0.9;
         const VERTEX_RADIUSZ = 1.0;
-        const INNER_RADIUS = 0.03;
+        const INNER_RADIUS = 0.02;
 
-        this.planePosition = [];
+        //円
         this.circleX = [];
         this.circleY = [];
         this.circleZ = [];
-        this.colorX = [];
-        this.colorY = [];
-        this.colorZ = [];
-        this.index = [];
 
-        for (let i = 0; i <= VERTEX_COUNT; ++i) {
+        this.circleColorX = [];
+        this.circleColorY = [];
+        this.circleColorZ = [];
 
+        this.circleIndex = [];
 
-            const iRad = (i / VERTEX_COUNT) * Math.PI * 2.0;
+        //ギズモ
+        this.lineX = [];
+        this.lineY = [];
+        this.lineZ = [];
+
+        this.minusLineX = [];
+        this.minusLineY = [];
+        this.minusLineZ = [];
+
+        this.lineColorX = [];
+        this.lineColorY = [];
+        this.lineColorZ = [];
+
+        this.lineIndex = [];
+
+        for (let i = 0; i <= TORUS_VERTEX_COUNT; ++i) {
+
+            const iRad = (i / TORUS_VERTEX_COUNT) * Math.PI * 2.0;
 
             const sint = Math.sin(iRad);
             const cost = Math.cos(iRad);
@@ -217,48 +233,159 @@ class WebGLFrame {
                 const sinp = Math.sin(jRad);
                 const cosp = Math.cos(jRad);
 
+                //円
                 this.circleX.push(
                     VERTEX_RADIUSX * cost + INNER_RADIUS * cosp * cost,
                     INNER_RADIUS * sinp,
                     VERTEX_RADIUSX * sint + INNER_RADIUS * cosp * sint,
                 );
-                this.colorX.push(0.0, 0.0, 1.0, 1.0);
+
+                this.circleY.push(
+                    VERTEX_RADIUSY * sint + INNER_RADIUS * cosp * sint,
+                    VERTEX_RADIUSY * cost + INNER_RADIUS * cosp * cost,
+                    INNER_RADIUS * sinp,
+                );
+
+                this.circleZ.push(
+                    INNER_RADIUS * sinp,
+                    VERTEX_RADIUSZ * sint + INNER_RADIUS * cosp * sint,
+                    VERTEX_RADIUSZ * cost + INNER_RADIUS * cosp * cost,
+                );
+
+
+                this.circleColorX.push(1.0, 0.0, 0.0, 1.0);
+                this.circleColorY.push(0.0, 1.0, 0.0, 1.0);
+                this.circleColorZ.push(0.0, 0.0, 1.0, 1.0);
+
+                if (i > 0 && j > 0) {
+
+                    const firstColumn = (i - 1) * (INNER_VERTEX_COUNT + 1) + j;
+                    const secoudColumn = i * (INNER_VERTEX_COUNT + 1) + j;
+
+                    this.circleIndex.push(
+                        firstColumn - 1, firstColumn, secoudColumn - 1
+                        , secoudColumn - 1, firstColumn, secoudColumn
+                    );
+                }
             }
+        }
 
+        for (let i = 0; i <= LINE_VERTEX_COUNT; i++) {
+            for (let j = 0; j <= INNER_VERTEX_COUNT; j++) {
+                const jRad = (j / INNER_VERTEX_COUNT) * Math.PI * 2.0;
+                const sin = Math.sin(jRad);
+                const cos = Math.cos(jRad);
 
-            this.circleY.push(
-                cost * VERTEX_RADIUSY,
-                sint * VERTEX_RADIUSY,
-                0,
-            );
+                this.lineX.push(
+                    i / 20.0 + 0.8,
+                    INNER_RADIUS * cos,
+                    INNER_RADIUS * sin,
+                );
 
-            this.circleZ.push(
-                0,
-                cost * VERTEX_RADIUSZ,
-                sint * VERTEX_RADIUSZ,
-            );
+                this.lineY.push(
+                    INNER_RADIUS * sin,
+                    i / 20.0 + 0.9,
+                    INNER_RADIUS * cos,
+                );
 
+                this.lineZ.push(
+                    INNER_RADIUS * cos,
+                    INNER_RADIUS * sin,
+                    i / 20.0 + 1.0,
+                );
 
-            this.colorY.push(0.0, 1.0, 0.0, 1.0);
-            this.colorZ.push(1.0, 0.0, 0.0, 1.0);
+                this.lineColorX.push(1.0, 0.0, 0.0, 1.0);
+                this.lineColorY.push(0.0, 1.0, 0.0, 1.0);
+                this.lineColorZ.push(0.0, 0.0, 1.0, 1.0);
+
+                if (i > 0 && j > 0) {
+
+                    const firstColumn = (i - 1) * (INNER_VERTEX_COUNT + 1) + j;
+                    const secoudColumn = i * (INNER_VERTEX_COUNT + 1) + j;
+
+                    this.lineIndex.push(
+                        firstColumn - 1, firstColumn, secoudColumn - 1
+                        , secoudColumn - 1, firstColumn, secoudColumn
+                    );
+                }
+            }
+        }
+
+        for (let i = 0; i <= LINE_VERTEX_COUNT; i++) {
+            for (let j = 0; j <= INNER_VERTEX_COUNT; j++) {
+                const jRad = (j / INNER_VERTEX_COUNT) * Math.PI * 2.0;
+                const sin = Math.sin(jRad);
+                const cos = Math.cos(jRad);
+
+                this.minusLineX.push(
+                    -i / 20.0 - 0.8,
+                    INNER_RADIUS * cos,
+                    INNER_RADIUS * sin,
+                );
+
+                this.minusLineY.push(
+                    INNER_RADIUS * sin,
+                    -i / 20.0 - 0.9,
+                    INNER_RADIUS * cos,
+                );
+
+                this.minusLineZ.push(
+                    INNER_RADIUS * cos,
+                    INNER_RADIUS * sin,
+                    -i / 20.0 - 1.0,
+                );
+            }
         }
 
         this.vboX = [
             this.createVbo(this.circleX),
-            this.createVbo(this.colorX),
+            this.createVbo(this.circleColorX),
         ]
 
         this.vboY = [
             this.createVbo(this.circleY),
-            this.createVbo(this.colorY),
+            this.createVbo(this.circleColorY),
         ]
 
         this.vboZ = [
             this.createVbo(this.circleZ),
-            this.createVbo(this.colorZ),
+            this.createVbo(this.circleColorZ),
         ]
 
-        this.ibo = this.createIbo(this.index);
+        this.ibo = this.createIbo(this.circleIndex);
+
+        this.lineVboX = [
+            this.createVbo(this.lineX),
+            this.createVbo(this.lineColorX),
+        ]
+
+        this.lineVboY = [
+            this.createVbo(this.lineY),
+            this.createVbo(this.lineColorY),
+        ]
+
+        this.lineVboZ = [
+            this.createVbo(this.lineZ),
+            this.createVbo(this.lineColorZ),
+        ]
+
+        this.minusLineVboX = [
+            this.createVbo(this.minusLineX),
+            this.createVbo(this.lineColorX),
+        ]
+
+        this.minusLineVboY = [
+            this.createVbo(this.minusLineY),
+            this.createVbo(this.lineColorY),
+        ]
+
+        this.minusLineVboZ = [
+            this.createVbo(this.minusLineZ),
+            this.createVbo(this.lineColorZ),
+        ]
+
+        this.lineIbo = this.createIbo(this.lineIndex);
+
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clearDepth(1.0);
@@ -329,10 +456,10 @@ class WebGLFrame {
 
 
 
-        const cameraPosition = [0.0, 0.0, 3.0];
+        const cameraPosition = [2.0, 2.0, 1.0];
         const centerPoint = [0.0, 0.0, 0.0];
-        const cameraUpDirection = [0.0, 1.0, 0.0];
-        const fovy = 60 * this.camera.scale * Math.PI / 180.0;　//Field of view Y
+        const cameraUpDirection = [0.0, 0.0, 1.0];
+        const fovy = 60 * this.camera.scale * Math.PI / 180.0; //Field of view Y
         const aspect = this.canvas.width / this.canvas.height;
         const near = 0.1;
         const far = 10.0;
@@ -345,12 +472,11 @@ class WebGLFrame {
         glMatrix.mat4.multiply(this.vpMatrix, this.pMatrix, this.vMatrix);
 
         this.camera.update();
-        let eulerMatrix = glMatrix.mat4.create();
-        eulerMatrix = this.camera.euler;
         //glMatrix.mat4.fromQuat(quaternionMatrix, this.camera.qtn);
 
-        glMatrix.mat4.multiply(this.vpMatrix, this.vpMatrix, eulerMatrix);
-        this.mvpMatrix = this.vpMatrix;
+
+        //x
+        glMatrix.mat4.multiply(this.mvpMatrix, this.vpMatrix, this.camera.eulerX);
 
         this.setUniform([
             this.mvpMatrix,
@@ -358,14 +484,49 @@ class WebGLFrame {
         ], this.uniLocation, this.uniType);
 
         this.setAttribute(this.vboX, this.attLocation, this.attStride, this.ibo);
-        gl.drawArrays(gl.POINTS, 0, this.circleX.length / 3);
+        gl.drawElements(gl.TRIANGLES, this.circleIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.lineVboX, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.minusLineVboX, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        //y
+        glMatrix.mat4.multiply(this.mvpMatrix, this.vpMatrix, this.camera.eulerY);
+
+        this.setUniform([
+            this.mvpMatrix,
+            this.nowTime,
+        ], this.uniLocation, this.uniType);
+
 
         this.setAttribute(this.vboY, this.attLocation, this.attStride, this.ibo);
-        gl.drawArrays(gl.POINTS, 0, this.circleX.length / 3);
+        gl.drawElements(gl.TRIANGLES, this.circleIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.lineVboY, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.minusLineVboY, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        //z
+        glMatrix.mat4.multiply(this.mvpMatrix, this.vpMatrix, this.camera.eulerZ);
+
+        this.setUniform([
+            this.mvpMatrix,
+            this.nowTime,
+        ], this.uniLocation, this.uniType);
 
         this.setAttribute(this.vboZ, this.attLocation, this.attStride, this.ibo);
-        gl.drawArrays(gl.POINTS, 0, this.circleX.length / 3);
+        gl.drawElements(gl.TRIANGLES, this.circleIndex.length, gl.UNSIGNED_SHORT, 0);
 
+        this.setAttribute(this.lineVboZ, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.minusLineVboZ, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+    
     }
 
     setAttribute(vbo, attL, attS, ibo) {
@@ -406,7 +567,6 @@ class WebGLFrame {
 class InteractionCamera {
     constructor() {
         this.qtn = glMatrix.quat.create();
-        this.euler = glMatrix.mat4.create();
         this.dragging = false;
         this.prevMouse = [0, 0];
         this.rotationScale = Math.min(window.innerWidth, window.innerHeight);
@@ -428,6 +588,14 @@ class InteractionCamera {
         this.rotateAxisX = [1.0, 0.0, 0.0];
         this.rotateAxisY = [0.0, 1.0, 0.0];
         this.rotateAxisZ = [0.0, 0.0, 1.0];
+
+        this.x = 0.0;
+        this.y = 0.0;
+        this.z = 0.0;
+
+        this.eulerX = glMatrix.mat4.create();
+        this.eulerY = glMatrix.mat4.create();
+        this.eulerZ = glMatrix.mat4.create();
     }
 
     startEvent(eve) {
@@ -459,12 +627,32 @@ class InteractionCamera {
         }
     }
 
-    rotate() {
-        const rot = glMatrix.mat4.create();
+    rotate(state) {
+
         //UIによる回転角の変更
-        glMatrix.mat4.rotate(rot, rot, alpha / 180 * Math.PI, this.rotateAxisX);
-        glMatrix.mat4.rotate(rot, rot, beta / 180 * Math.PI, this.rotateAxisY);
-        glMatrix.mat4.rotate(this.euler, rot, gamma / 180 * Math.PI, this.rotateAxisZ);
+        if (state == 'x') {
+            glMatrix.mat4.rotate(this.eulerX, this.eulerX, alpha / 180 * Math.PI - this.x, this.rotateAxisX);
+            this.x = alpha / 180 * Math.PI;
+
+            return;
+        }
+
+        if (state == 'y') {
+            glMatrix.mat4.rotate(this.eulerX, this.eulerX, beta / 180 * Math.PI - this.y, this.rotateAxisY);
+            glMatrix.mat4.rotate(this.eulerY, this.eulerY, beta / 180 * Math.PI - this.y, this.rotateAxisY);
+            this.y = beta / 180 * Math.PI;
+
+            return;
+        }
+
+        if (state == 'z') {
+            glMatrix.mat4.rotate(this.eulerX, this.eulerX, gamma / 180 * Math.PI - this.z, this.rotateAxisZ);
+            glMatrix.mat4.rotate(this.eulerY, this.eulerY, gamma / 180 * Math.PI - this.z, this.rotateAxisZ);
+            glMatrix.mat4.rotate(this.eulerZ, this.eulerZ, gamma / 180 * Math.PI - this.z, this.rotateAxisZ);
+            this.z = gamma / 180 * Math.PI;
+
+            return;
+        }
     }
 
 
