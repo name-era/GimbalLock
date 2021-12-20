@@ -1,3 +1,4 @@
+
 let isFace = false;
 let alpha = 0;
 let beta = 0;
@@ -474,42 +475,6 @@ class WebGLFrame {
         this.camera.update();
         //glMatrix.mat4.fromQuat(quaternionMatrix, this.camera.qtn);
 
-
-        //x
-        glMatrix.mat4.multiply(this.mvpMatrix, this.vpMatrix, this.camera.eulerX);
-
-        this.setUniform([
-            this.mvpMatrix,
-            this.nowTime,
-        ], this.uniLocation, this.uniType);
-
-        this.setAttribute(this.vboX, this.attLocation, this.attStride, this.ibo);
-        gl.drawElements(gl.TRIANGLES, this.circleIndex.length, gl.UNSIGNED_SHORT, 0);
-
-        this.setAttribute(this.lineVboX, this.attLocation, this.attStride, this.lineIbo);
-        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
-
-        this.setAttribute(this.minusLineVboX, this.attLocation, this.attStride, this.lineIbo);
-        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
-
-        //y
-        glMatrix.mat4.multiply(this.mvpMatrix, this.vpMatrix, this.camera.eulerY);
-
-        this.setUniform([
-            this.mvpMatrix,
-            this.nowTime,
-        ], this.uniLocation, this.uniType);
-
-
-        this.setAttribute(this.vboY, this.attLocation, this.attStride, this.ibo);
-        gl.drawElements(gl.TRIANGLES, this.circleIndex.length, gl.UNSIGNED_SHORT, 0);
-
-        this.setAttribute(this.lineVboY, this.attLocation, this.attStride, this.lineIbo);
-        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
-
-        this.setAttribute(this.minusLineVboY, this.attLocation, this.attStride, this.lineIbo);
-        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
-
         //z
         glMatrix.mat4.multiply(this.mvpMatrix, this.vpMatrix, this.camera.eulerZ);
 
@@ -526,7 +491,49 @@ class WebGLFrame {
 
         this.setAttribute(this.minusLineVboZ, this.attLocation, this.attStride, this.lineIbo);
         gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
-    
+
+        //y
+        let rotateY = glMatrix.mat4.create();
+        glMatrix.mat4.multiply(rotateY, this.camera.eulerZ, this.camera.eulerY);
+        glMatrix.mat4.multiply(this.mvpMatrix, this.vpMatrix, rotateY);
+
+        this.setUniform([
+            this.mvpMatrix,
+            this.nowTime,
+        ], this.uniLocation, this.uniType);
+
+        this.setAttribute(this.vboY, this.attLocation, this.attStride, this.ibo);
+        gl.drawElements(gl.TRIANGLES, this.circleIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.lineVboY, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.minusLineVboY, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        //x
+        let rotateX = glMatrix.mat4.create();
+        glMatrix.mat4.multiply(rotateX, this.camera.eulerZ, this.camera.eulerY);
+        glMatrix.mat4.multiply(rotateX, rotateX, this.camera.eulerX);
+        glMatrix.mat4.multiply(this.mvpMatrix, this.vpMatrix, rotateX);
+
+        this.setUniform([
+            this.mvpMatrix,
+            this.nowTime,
+        ], this.uniLocation, this.uniType);
+
+        this.setAttribute(this.vboX, this.attLocation, this.attStride, this.ibo);
+        gl.drawElements(gl.TRIANGLES, this.circleIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.lineVboX, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        this.setAttribute(this.minusLineVboX, this.attLocation, this.attStride, this.lineIbo);
+        gl.drawElements(gl.TRIANGLES, this.lineIndex.length, gl.UNSIGNED_SHORT, 0);
+
+
+
+
     }
 
     setAttribute(vbo, attL, attS, ibo) {
@@ -631,26 +638,22 @@ class InteractionCamera {
 
         //UIによる回転角の変更
         if (state == 'x') {
-            glMatrix.mat4.rotate(this.eulerX, this.eulerX, alpha / 180 * Math.PI - this.x, this.rotateAxisX);
-            this.x = alpha / 180 * Math.PI;
+            glMatrix.mat4.rotate(this.eulerX, this.eulerX, alpha / 180.0 * Math.PI - this.x, this.rotateAxisX);
+            this.x = alpha / 180.0 * Math.PI;
 
             return;
         }
 
         if (state == 'y') {
-            glMatrix.mat4.rotate(this.eulerX, this.eulerX, beta / 180 * Math.PI - this.y, this.rotateAxisY);
-            glMatrix.mat4.rotate(this.eulerY, this.eulerY, beta / 180 * Math.PI - this.y, this.rotateAxisY);
-            this.y = beta / 180 * Math.PI;
+            glMatrix.mat4.rotate(this.eulerY, this.eulerY, beta / 180.0 * Math.PI - this.y, this.rotateAxisY);
+            this.y = beta / 180.0 * Math.PI;
 
             return;
         }
 
         if (state == 'z') {
-            glMatrix.mat4.rotate(this.eulerX, this.eulerX, gamma / 180 * Math.PI - this.z, this.rotateAxisZ);
-            glMatrix.mat4.rotate(this.eulerY, this.eulerY, gamma / 180 * Math.PI - this.z, this.rotateAxisZ);
             glMatrix.mat4.rotate(this.eulerZ, this.eulerZ, gamma / 180 * Math.PI - this.z, this.rotateAxisZ);
-            this.z = gamma / 180 * Math.PI;
-
+            this.z = gamma / 180.0 * Math.PI;
             return;
         }
     }
